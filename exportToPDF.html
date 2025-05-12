@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Exportar Power BI para PDF</title>
+    <script src="https://npmcdn.com/es6-promise@3.2.1"></script>
+    <script src="https://cdn.jsdelivr.net/npm/powerbi-client@2.21.0/dist/powerbi.min.js"></script>
+</head>
+<body>
+    <button onclick="exportToPDF()" style="padding: 10px; background: #0078d4; color: white; border: none; cursor: pointer;">
+        Exportar para PDF
+    </button>
+
+    <script>
+        let report; // Variável global para o relatório Power BI
+
+        // Função para exportar o relatório como PDF
+        function exportToPDF() {
+            if (!report) {
+                alert("Relatório não carregado. Aguarde...");
+                return;
+            }
+
+            report.saveAsPDF({
+                settings: {
+                    pages: [0], // Exporta a página atual (ajuste se necessário)
+                    layoutType: "Custom",
+                    customLayout: { width: 800, height: 600 }
+                }
+            })
+            .then(() => console.log("PDF exportado com sucesso!"))
+            .catch(error => alert("Erro ao exportar PDF: " + error.message));
+        }
+
+        // Função para receber o token de acesso do Power Apps
+        window.addEventListener("message", (event) => {
+            if (event.data.accessToken && event.data.embedUrl && event.data.reportId) {
+                const models = window['powerbi-client'].models;
+                const config = {
+                    type: "report",
+                    tokenType: models.TokenType.Embed,
+                    accessToken: event.data.accessToken,
+                    embedUrl: event.data.embedUrl,
+                    id: event.data.reportId,
+                    settings: {
+                        panes: {
+                            filters: { expanded: false, visible: false },
+                            pageNavigation: { visible: false }
+                        }
+                    }
+                };
+
+                // Incorpora o relatório Power BI
+                const powerbi = new window['powerbi-client'].service.Service(
+                    window['powerbi-client'].factories.hpmFactory,
+                    window['powerbi-client'].factories.wpmpFactory,
+                    window['powerbi-client'].factories.routerFactory
+                );
+
+                const reportContainer = document.createElement("div");
+                reportContainer.style.width = "100%";
+                reportContainer.style.height = "100%";
+                document.body.appendChild(reportContainer);
+
+                report = powerbi.embed(reportContainer, config);
+            }
+        });
+    </script>
+</body>
+</html>
